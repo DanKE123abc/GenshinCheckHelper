@@ -1,37 +1,42 @@
 # GenshinSignHelper
 
-#### 介绍
-原神米游社签到助手，使用微信测试号推送。
+## 原神米游社签到助手
 
-#### 软件架构
-软件架构说明
+本程序参考genshin-check-in和genshinhelper
 
+### 起因
 
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+因为本人是一名学生，时常忘记要签到原神，导致每个月只能签到几天（哭），一开始我用的是阿里云+genshinhelper+sever酱，但是sever酱最近收费了，每天只能用五次，我想把genshinhelper的推送改到微信测试号上，但genshinhelper因为功能太多导致改起来很麻烦，想到这里我还不如自己写一个，参考网上的资料和genshin-check-in等项目做出了此程序。
 
 
-#### 特技
+### 安装教程
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+##### 1.抓取cookie
+
+​	在电脑上登录https://bbs.mihoyo.com/ys/
+
+​	新建一个书签，内容为：
+
+​	*javascript:(function(){let domain=document.domain;let cookie=document.cookie;prompt('Cookies: '+domain, cookie)})();*
+
+​	点击书签即可抓取cookie
+
+##### 2.登录微信公众平台：[微信公众平台 (qq.com)](https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login)
+
+​	获得你的微信测试号，在./AccessToken.py里修改appid与appsecret即可
+
+​	关注你的微信测试号，得到你的推送id（pushid）
+
+##### 3.修改./config.json
+
+​	UID填入你的原神uid
+
+​	cookie填入你的cookie
+
+​	pushid填入你需要推送的微信id
+
+​	*支持多用户，自行研究*
+
+### 待续
+
+todo
