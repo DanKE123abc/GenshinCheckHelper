@@ -1,3 +1,5 @@
+# **<u>当前版本存在严重Bug，请等待作者修复</u>**
+
 # GenshinSignHelper
 
 ## 原神米游社签到助手
@@ -17,7 +19,9 @@
 
 ​	新建一个书签，内容为：
 
-​	*javascript:(function(){let domain=document.domain;let cookie=document.cookie;prompt('Cookies: '+domain, cookie)})();*
+```
+javascript:(function(){let domain=document.domain;let cookie=document.cookie;prompt('Cookies: '+domain, cookie)})();
+```
 
 ​	点击书签即可抓取cookie
 
