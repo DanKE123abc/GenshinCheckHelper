@@ -5,9 +5,9 @@ import requests
 #备注：微信测试号token
 
 class AccessToken(object):
-    APPID = "这里填入你的微信测试号appid"
-    APPSECRET = "这里填入你的微信测试号appsecret"
-
+    APPID = ""
+    APPSECRET = ""
+    
     def __init__(self, app_id=APPID, app_secret=APPSECRET) -> None:
         self.app_id = app_id
         self.app_secret = app_secret

@@ -1,12 +1,7 @@
 [
   {
-    "UID": 这里填入你的原神UID,
-    "cookie": "这里填入这个原神账号的cookie",
-    "pushid":"这里填入你的微信测试号推送给谁的ID"
-  },
-  {
-    "UID": 多用户示例,
-    "cookie": "多用户示例cookie",
-    "pushid":"多用户示例ID"
+    "UID": ,
+    "cookie": "",
+    "pushid":""
   }
 ]

@@ -1,31 +1,22 @@
 # -*- coding: utf-8 -*-
+import DKtools
+import setting
+import random
+import captcha
+import time
 import json
 import requests
-import time
-import hashlib
-import string
-import random
-import sys
-from AccessToken import AccessToken
-
+from request import http
+from wechatpush import AccessToken
 #时间：2022/9/16
 #作者：蛋壳
 #备注：米游社原神签到
 
-def md5(text):
-    md5 = hashlib.md5()
-    md5.update(text.encode())
-    return md5.hexdigest()
 
-def getDS():
-    n = '1OUn34iIy84ypu9cpXyun2VaQ2zuFeLm'
-    i = str(int(time.time()))
-    r = ''.join(random.sample(string.ascii_lowercase + string.digits, 6))
-    c = md5("salt=" + n + "&t=" + i + "&r=" + r)
-    return "{},{},{}".format(i, r, c)
 
-#微信推送
-def dankepush(openid,message):
+
+#---------------------------微信推送------------------------------------
+def wechatpush(openid,message):
     access_token = AccessToken().get_access_token()
     body = {
         "touser": openid,
@@ -43,45 +34,59 @@ def dankepush(openid,message):
     )
     result = response.json()
     print(result)
-
+#------------------------------------------------------------------------
         
 
 class Sign:
-    app_version = "2.33.1"
+    app_version = "2.38.1"
     act_id = "e202009291139501"
-    region = "cn_gf01"
-    device_id = "7ab3bc70b846186b9da1e816e6c6f08d"
+    region = "hk4e_cn"
 
     def __init__(self, uid, cookie):
         self.uid = uid
         self.cookie = cookie
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.3.0"
-        }
-
+    
     #请求头
-    def buildHearders(self):
-        self.headers["Cookie"] = self.cookie
-        self.headers["x-rpc-device_id"] = Sign.device_id
-        self.headers["Host"] = "api-takumi.mihoyo.com"
-        self.headers["Content-type"] = "application/json;charset=utf-8"
-        self.headers["Accept"] = "application/json, text/plain, */*"
-        self.headers["x-rpc-client_type"] = "4"
-        self.headers["x-rpc-app_version"] = Sign.app_version
-        self.headers["DS"] = getDS()
+    def buildHearders(self, cookie):
+        self.headers = {}
+        self.headers.update(setting.headers)
+        self.headers["DS"] = DKtools.getDS()
+        self.headers['Referer'] = 'https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?bbs_auth_required=true' \
+                                  f'&act_id={setting.genshin_Act_id}&utm_source=bbs&utm_medium=mys&utm_campaign=icon'
+        self.headers['Cookie'] = cookie
+        self.headers['x-rpc-device_id'] = DKtools.get_device_id(cookie)
 
     #签到原神
-    def sign(self):
-        signUrl = "https://api-takumi.mihoyo.com/event/bbs_sign_reward/sign"
-        param = {"act_id": Sign.act_id, "region": Sign.region, "uid": self.uid}
-        result = requests.request("POST", signUrl, headers=self.headers, data=json.dumps(param))
-        return json.loads(result.content)
+    def sign(self, uid):
+        header = {}
+        header.update(self.headers)
+        for i in range(4):
+            if i != 0:
+                print(f'触发验证码，即将进行第{i}次重试，最多3次')
+            req = http.post(url=setting.genshin_Signurl, headers=header, json={'act_id': setting.genshin_Act_id, 'region': "hk4e_cn", 'uid': uid})
+            if req.status_code == 429:
+                time.sleep(10)  # 429同ip请求次数过多，尝试sleep10s进行解决
+                print(f'429 Too Many Requests ，即将进入下一次请求')
+                continue
+            data = req.json()
+            if data["retcode"] == 0 and data["data"]["success"] == 1:
+                validate = captcha.game_captcha(data["data"]["gt"], data["data"]["challenge"])
+                if validate is not None:
+                    header["x-rpc-challenge"] = data["data"]["challenge"]
+                    header["x-rpc-validate"] = validate
+                    header["x-rpc-seccode"] = f'{validate}|jordan'
+                time.sleep(random.randint(6, 15))
+            else:
+                break
+        return json.loads(req.content)
 
     #签到信息
-    def getSignInfo(self):
-        url = "https://api-takumi.mihoyo.com/event/bbs_sign_reward/home?act_id={}"
-        userInfoResult = requests.get(url.format(Sign.act_id), headers=self.headers)
-        return json.loads(userInfoResult.content)
+    def getSignInfo(self, region: str, uid: str) -> dict:
+        req = http.get(setting.genshin_Is_signurl.format(setting.genshin_Act_id, region, uid), headers=self.headers)
+        data = req.json()
+        if data["retcode"] != 0:
+            print("账号签到信息获取失败: "+req.text)
+        return data["data"]
 
     #签到天数
     def getTotalSignDay(self):
@@ -96,14 +101,14 @@ class Sign:
         return json.loads(userInfoResult.content)
 
     def main_handler(self):
-        self.buildHearders()
+        self.buildHearders(cookie)
         #签到
-        signResult = self.sign()
+        signResult = self.sign(uid)
         #游戏信息
         totalSignDay = self.getTotalSignDay()["data"]
         totalSignDay = totalSignDay["total_sign_day"]
         gameInfo = self.getGameInfo()["data"]["list"][0]
-        signInfo = self.getSignInfo()["data"]
+        signInfo = self.getSignInfo()
         award = signInfo["awards"][totalSignDay - 1]
         message = '''⏰当前时间：{} 
 哈喽！您的米游社原神签到已经帮您完成了！
@@ -126,6 +131,7 @@ class Sign:
 
 
 
+
 def handler(event, context):#这里是阿里云的入口，腾讯云要改成main_handler
     config_path = "config.json"
     with open(config_path, "r") as f:
@@ -137,11 +143,11 @@ def handler(event, context):#这里是阿里云的入口，腾讯云要改成mai
         pushid = user['pushid']
         try:
             miHoYoUser = Sign(uid, cookie)
-            msg = miHoYoUser.main_handler()
+            msg = miHoYoUser.main_handler(cookie,uid)
         except:
             msg = '签到失败，cookie可能已过期'
         #print(msg)
-        dankepush(pushid, msg)
+        wechatpush(pushid, msg)
 
 if __name__ == '__main__':
     config_path = "config.json"
@@ -152,12 +158,9 @@ if __name__ == '__main__':
         uid = user['UID']
         cookie = user['cookie']
         pushid = user['pushid']
-        try:
-            miHoYoUser = Sign(uid, cookie)
-            msg = miHoYoUser.main_handler()
-        except:
-            msg = '签到失败，cookie可能已过期'
+        miHoYoUser = Sign(uid, cookie)
+        msg = miHoYoUser.main_handler()
         #print(msg)
-        dankepush(pushid, msg)
+        wechatpush(pushid, msg)
         
 
